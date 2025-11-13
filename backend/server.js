@@ -394,15 +394,12 @@ app.post('/enviar', upload.array('arquivos'), async (req, res) => {
 
     // === EMAIL ===
     const transporter = nodemailer.createTransport({
-      host: 'smtp.elasticemail.com',
-      port: 2525,
-      secure: false, // TLS
+      host: 'in-v3.mailjet.com',
+      port: 587,
+      secure: false,
       auth: {
-        user: process.env.ELASTIC_EMAIL, // Public API Key
-        pass: process.env.ELASTIC_PASS  // Secret Key
-      },
-      tls: {
-        rejectUnauthorized: false
+        user: process.env.MJ_USERNAME, // API Key
+        pass: process.env.MJ_PASSWORD  // Secret Key
       }
     });
 
