@@ -3,10 +3,14 @@
 const express = require('express');
 const multer = require('multer');
 const ExcelJS = require('exceljs');
-const nodemailer = require('nodemailer');
+// const nodemailer = require('nodemailer');
+const Mailjet = require('node-mailjet').connect(
+  process.env.MJ_USERNAME,
+  process.env.MJ_PASSWORD
+);
 const path = require('path');
 const fs = require('fs');
-require('dotenv').config();
+// require('dotenv').config();
 
 const app = express();
 
@@ -387,23 +391,49 @@ app.post('/enviar', upload.array('arquivos'), async (req, res) => {
 
 
     // === ANEXOS ===
-    const attachments = [{ filename: 'despesas.xlsx', path: excelPath }];
-    despesas.forEach(d => {
-      if (d.arquivoPath) attachments.push({ filename: d.arquivoNome, path: d.arquivoPath });
-    });
+    // const attachments = [{ filename: 'despesas.xlsx', path: excelPath }];
+    // despesas.forEach(d => {
+    //   if (d.arquivoPath) attachments.push({ filename: d.arquivoNome, path: d.arquivoPath });
+    // });
 
     // === EMAIL ===
-    const transporter = nodemailer.createTransport({
-      host: 'in-v3.mailjet.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.MJ_USERNAME, // API Key
-        pass: process.env.MJ_PASSWORD  // Secret Key
-      }
-    });
+    // const transporter = nodemailer.createTransport({
+    //   host: 'in-v3.mailjet.com',
+    //   port: 465,
+    //   secure: true,
+    //   auth: {
+    //     user: process.env.MJ_USERNAME, // API Key
+    //     pass: process.env.MJ_PASSWORD  // Secret Key
+    //   }
+    // });
 
-    // Corpo do email em HTML
+    // // Corpo do email em HTML
+    // const htmlBody = `
+    //   <h2>Nova solicitação de Reembolso de Despesas</h2>
+    //   <p><strong>Detalhes do solicitante:</strong></p>
+    //   <ul>
+    //     <li>Nome: ${nome}</li>
+    //     <li>Email: ${email}</li>
+    //     <li>Data do formulário: ${dataAtual}</li>
+    //   </ul>
+    //   <p><strong>Resumo das Despesas:</strong></p>
+    //   <p>Total de Despesas: <strong>${despesas.length}</strong></p>
+    //   <p>Planilha com detalhes e comprovantes em anexo.</p>
+    // `;
+
+    // await transporter.sendMail({
+    //   from: '"Kraftone Despesas" <jonathan.lemos@kraftonegroup.com>',
+    //   // from: process.env.EMAIL_USER,
+    //   to: 'jonathan.lemos@kraftonegroup.com',
+    //   cc: email,
+    //   subject: `Solicitação de Reembolso de Despesas`,
+    //   html: htmlBody,
+    //   attachments
+    // });
+
+
+
+        // === EMAIL COM API REST DO MAILJET ===
     const htmlBody = `
       <h2>Nova solicitação de Reembolso de Despesas</h2>
       <p><strong>Detalhes do solicitante:</strong></p>
@@ -417,15 +447,62 @@ app.post('/enviar', upload.array('arquivos'), async (req, res) => {
       <p>Planilha com detalhes e comprovantes em anexo.</p>
     `;
 
-    await transporter.sendMail({
-      from: '"Kraftone Despesas" <jonathan.lemos@kraftonegroup.com>',
-      // from: process.env.EMAIL_USER,
-      to: 'jonathan.lemos@kraftonegroup.com',
-      cc: email,
-      subject: `Solicitação de Reembolso de Despesas`,
-      html: htmlBody,
-      attachments
+    // LER PLANILHA EM BASE64
+    const planilhaBuffer = fs.readFileSync(excelPath);
+    const planilhaBase64 = planilhaBuffer.toString('base64');
+
+    // PREPARAR ANEXOS
+    const attachments = [
+      {
+        ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        Filename: `despesas_${nome}.xlsx`,
+        Base64Content: planilhaBase64
+      }
+    ];
+
+    // ADICIONAR ARQUIVOS DO USUÁRIO
+    arquivos.forEach(file => {
+      const fileBuffer = fs.readFileSync(file.path);
+      attachments.push({
+        ContentType: file.mimetype,
+        Filename: file.originalname,
+        Base64Content: fileBuffer.toString('base64')
+      });
     });
+
+    // ENVIAR COM API REST
+    try {
+      await Mailjet.post('send', { version: 'v3.1' }).request({
+        Messages: [
+          {
+            From: {
+              Email: 'jonathan.lemos@kraftonegroup.com',
+              Name: 'Kraftone Despesas'
+            },
+            To: [
+              {
+                Email: email,
+                Name: nome
+              }
+            ],
+            Cc: [
+              {
+                Email: 'jonathan.lemos@kraftonegroup.com'
+              }
+            ],
+            Subject: `Solicitação de Reembolso - ${nome}`,
+            HTMLPart: htmlBody,
+            Attachments: attachments
+          }
+        ]
+      });
+      console.log('Email enviado via API REST!');
+    } catch (mailError) {
+      console.error('ERRO AO ENVIAR EMAIL:', mailError);
+      throw mailError;
+    }
+
+
 
     // === LIMPAR ARQUIVOS TEMPORÁRIOS ===
     fs.unlinkSync(excelPath);
