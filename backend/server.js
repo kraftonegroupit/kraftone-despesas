@@ -421,7 +421,8 @@ app.post('/enviar', upload.array('arquivos'), async (req, res) => {
     `;
 
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: '"Kraftone Despesas" <jonathan.lemos@kraftonegroup.com>',
+      // from: process.env.EMAIL_USER,
       to: 'jonathan.lemos@kraftonegroup.com',
       cc: email,
       subject: `Solicitação de Reembolso de Despesas`,
