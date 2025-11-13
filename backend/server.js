@@ -394,8 +394,13 @@ app.post('/enviar', upload.array('arquivos'), async (req, res) => {
 
     // === EMAIL ===
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+      host: 'in-v3.mailjet.com',
+      port: 587,
+      secure: false, // TLS
+      auth: {
+        user: process.env.MJ_USERNAME, // Public API Key
+        pass: process.env.MJ_PASSWORD  // Secret Key
+      } 
     });
 
     // Corpo do email em HTML
