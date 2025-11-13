@@ -80,7 +80,10 @@ function App() {
     });
 
     try {
-      await fetch('http://localhost:3001/enviar', { method: 'POST', body: formData });
+      await fetch('https://kraftone-despesas-backend.onrender.com/enviar', {
+        method: 'POST',
+        body: formData
+      });
 
       // LIMPAR CAMPOS
       setNome('');
