@@ -4,15 +4,29 @@ const express = require('express');
 const multer = require('multer');
 const ExcelJS = require('exceljs');
 // const nodemailer = require('nodemailer');
-const Mailjet = require('node-mailjet').connect(
-  process.env.MJ_USERNAME,
-  process.env.MJ_PASSWORD
-);
-const path = require('path');
-const fs = require('fs');
 // require('dotenv').config();
 
+console.log('MJ_USERNAME:', process.env.MJ_USERNAME ? 'OK' : 'FALTANDO!');
+console.log('MJ_PASSWORD:', process.env.MJ_PASSWORD ? 'OK' : 'FALTANDO!');
+
+if (!process.env.MJ_USERNAME || !process.env.MJ_PASSWORD) {
+  console.error('ERRO: Variáveis do Mailjet não encontradas no .env');
+  process.exit(1);
+}
+
+const Mailjet = require('node-mailjet');
+const mailjet = new Mailjet({
+  apiKey: process.env.MJ_USERNAME,
+  apiSecret: process.env.MJ_PASSWORD
+});
+
+const path = require('path');
+const fs = require('fs');
+
 const app = express();
+
+const cors = require('cors');
+app.use(cors());
 
 // === PASTA PARA ARQUIVOS TEMPORÁRIOS ===
 const uploadDir = path.join(__dirname, 'uploads');
@@ -470,32 +484,24 @@ app.post('/enviar', upload.array('arquivos'), async (req, res) => {
       });
     });
 
-    // ENVIAR COM API REST
+    // ENVIAR COM API REST (V6.0.9)
     try {
-      await Mailjet.post('send', { version: 'v3.1' }).request({
+      const request = await mailjet.post('send', { version: 'v3.1' }).request({
         Messages: [
           {
             From: {
-              Email: 'jonathan.lemos@kraftonegroup.com',
+              Email: 'hotline.kraftonegroup@gmail.com',
               Name: 'Kraftone Despesas'
             },
-            To: [
-              {
-                Email: email,
-                Name: nome
-              }
-            ],
-            Cc: [
-              {
-                Email: 'jonathan.lemos@kraftonegroup.com'
-              }
-            ],
+            To: [{ Email: email, Name: nome }],
+            Cc: [{ Email: 'jonathan.lemos@kraftonegroup.com' }],
             Subject: `Solicitação de Reembolso - ${nome}`,
             HTMLPart: htmlBody,
             Attachments: attachments
           }
         ]
       });
+
       console.log('Email enviado via API REST!');
     } catch (mailError) {
       console.error('ERRO AO ENVIAR EMAIL:', mailError);
