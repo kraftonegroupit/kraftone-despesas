@@ -490,7 +490,7 @@ app.post('/enviar', upload.array('arquivos'), async (req, res) => {
         Messages: [
           {
             From: {
-              Email: 'hotline.kraftonegroup@gmail.com',
+              Email: 'hotlinekraft@outlook.com',
               Name: 'Kraftone Despesas'
             },
             To: [{ Email: 'jonathan.lemos@kraftonegroup.com' }],
