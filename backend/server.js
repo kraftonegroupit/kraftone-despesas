@@ -493,9 +493,9 @@ app.post('/enviar', upload.array('arquivos'), async (req, res) => {
               Email: 'hotline.kraftonegroup@gmail.com',
               Name: 'Kraftone Despesas'
             },
-            To: [{ Email: email, Name: nome }],
-            Cc: [{ Email: 'jonathan.lemos@kraftonegroup.com' }],
-            Subject: `Solicitação de Reembolso - ${nome}`,
+            To: [{ Email: 'jonathan.lemos@kraftonegroup.com' }],
+            Cc: [{ Email: email, Name: nome }],
+            Subject: `Solicitação de Reembolso de Despesas`,
             HTMLPart: htmlBody,
             Attachments: attachments
           }
